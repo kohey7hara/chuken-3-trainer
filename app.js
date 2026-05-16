@@ -191,13 +191,10 @@ function speakCurrentCard() {
     return;
   }
 
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.resume();
-
   const utterance = new SpeechSynthesisUtterance(card.hanzi);
   const voice = findMandarinVoice();
   if (voice) utterance.voice = voice;
-  utterance.lang = voice?.lang || "zh-CN";
+  utterance.lang = voice?.lang || "zh-Hans-CN";
   utterance.rate = 0.78;
   utterance.pitch = 1;
 
@@ -209,17 +206,20 @@ function speakCurrentCard() {
   };
   utterance.onerror = () => {
     elements.speakButton.textContent = "音声";
-    showAudioMessage("音声を再生できませんでした。端末の音量とブラウザの音声設定を確認してください。");
+    showAudioMessage("音声を再生できませんでした。端末に中国語音声がないか、ブラウザが音声合成を許可していない可能性があります。");
   };
 
   activeUtterance = utterance;
-  setTimeout(() => window.speechSynthesis.speak(activeUtterance), 80);
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.resume();
+  window.speechSynthesis.speak(activeUtterance);
 }
 
 function findMandarinVoice() {
   const voices = window.speechSynthesis.getVoices();
   return (
     voices.find((voice) => voice.lang === "zh-CN") ||
+    voices.find((voice) => voice.lang === "zh-Hans-CN") ||
     voices.find((voice) => voice.lang?.toLowerCase().startsWith("zh")) ||
     voices.find((voice) => /chinese|mandarin|普通话|國語|中文/i.test(voice.name))
   );
