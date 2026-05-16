@@ -121,7 +121,7 @@ h2 {
 
 .content-panel {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
   margin-bottom: 14px;
 }
@@ -342,5 +342,9 @@ h2 {
 
   .mission-list {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .content-panel {
+    grid-template-columns: repeat(4, 1fr);
   }
 }

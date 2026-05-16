@@ -1,4 +1,5 @@
-const cards = learningContent.cards;
+const importedVocabularyCards = typeof hskVocabularyCards === "undefined" ? [] : hskVocabularyCards;
+const cards = [...learningContent.cards, ...importedVocabularyCards];
 const lessons = learningContent.lessons;
 const dailyGoal = 8;
 
@@ -24,6 +25,7 @@ const elements = {
   missionList: document.querySelector("#missionList"),
   lessonTag: document.querySelector("#lessonTag"),
   lessonCount: document.querySelector("#lessonCount"),
+  vocabCount: document.querySelector("#vocabCount"),
   cardCount: document.querySelector("#cardCount"),
   currentPosition: document.querySelector("#currentPosition"),
   practiceType: document.querySelector("#practiceType"),
@@ -50,7 +52,17 @@ function currentCard() {
 }
 
 function currentLesson() {
-  return lessons.find((lesson) => lesson.id === currentCard().lesson) || lessons[0];
+  return lessonForCard(currentCard());
+}
+
+function lessonForCard(card) {
+  const lesson = lessons.find((item) => item.id === card.lesson);
+  if (lesson) return lesson;
+  if (card.type === "Vocabulary") {
+    const pack = Math.max(1, Math.floor((card.lesson - 101) / 10) + 1);
+    return { id: card.lesson, phase: "Vocab", title: `単語パック ${pack}`, theme: "2,000語" };
+  }
+  return lessons[0];
 }
 
 function saveState() {
@@ -98,22 +110,25 @@ function renderProgress() {
   const done = Math.min(state.completedToday.length, dailyGoal);
   const totalLessons = lessons.length;
   const totalCards = cards.length;
-  const position = (state.index % cards.length) + 1;
+  const totalVocabulary = cards.filter((card) => card.type === "Vocabulary").length;
+  const currentVisibleTotal = visibleCards().length;
+  const position = (state.index % currentVisibleTotal) + 1;
   const studiedCards = Number(localStorage.getItem("studiedCards") || 0);
 
   elements.todayDone.textContent = `${done}/${dailyGoal}`;
   elements.streak.textContent = state.streak;
-  elements.examProgress.textContent = Math.min(5 + Math.floor((studiedCards / 800) * 100), 100);
+  elements.examProgress.textContent = Math.min(5 + Math.floor((studiedCards / 2000) * 100), 100);
   elements.lessonCount.textContent = totalLessons;
+  elements.vocabCount.textContent = totalVocabulary;
   elements.cardCount.textContent = totalCards;
-  elements.currentPosition.textContent = `${position}/${totalCards}`;
+  elements.currentPosition.textContent = `${position}/${currentVisibleTotal}`;
   elements.lessonTag.textContent = currentLesson().phase;
 }
 
 function renderCard() {
   const filtered = visibleCards();
   const card = state.view === "today" ? currentCard() : filtered[state.index % filtered.length];
-  const lesson = lessons.find((item) => item.id === card.lesson) || currentLesson();
+  const lesson = lessonForCard(card);
 
   elements.practiceType.textContent = `${card.type} / Lesson ${lesson.id}`;
   elements.practiceTitle.textContent = `${card.title}: ${lesson.title}`;
