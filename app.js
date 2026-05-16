@@ -143,7 +143,7 @@ function renderCard() {
   elements.speakButton.textContent = "音声";
   elements.choices.innerHTML = "";
 
-  card.choices.forEach((choice) => {
+  shuffledChoices(card).forEach((choice) => {
     const button = document.createElement("button");
     button.className = "choice-button";
     button.type = "button";
@@ -151,6 +151,24 @@ function renderCard() {
     button.addEventListener("click", () => selectChoice(button, choice, card));
     elements.choices.appendChild(button);
   });
+}
+
+function shuffledChoices(card) {
+  const choices = [...new Set(card.choices)];
+  const seed = `${todayKey()}-${card.lesson}-${card.type}-${card.hanzi}-${state.view}`;
+  return choices
+    .map((choice, index) => ({ choice, rank: seededRank(`${seed}-${index}-${choice}`) }))
+    .sort((a, b) => a.rank - b.rank)
+    .map((item) => item.choice);
+}
+
+function seededRank(text) {
+  let hash = 2166136261;
+  for (const char of text) {
+    hash ^= char.codePointAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
 }
 
 function markStudied(card) {
