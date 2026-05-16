@@ -247,7 +247,10 @@ function selectTutorialChoice(button, choice, drill) {
 }
 
 function shuffledChoices(card) {
-  const choices = [...new Set(card.choices)];
+  const choices = [...new Set(card.choices.map((choice) => String(choice || "").trim()).filter(Boolean))];
+  while (choices.length < 4) {
+    choices.push(`関連語${choices.length}`);
+  }
   const seed = `${todayKey()}-${card.lesson}-${card.type}-${card.hanzi}-${state.view}`;
   return choices
     .map((choice, index) => ({ choice, rank: seededRank(`${seed}-${index}-${choice}`) }))
