@@ -18,6 +18,8 @@ const state = {
   view: "today",
 };
 
+let activeUtterance = null;
+
 const elements = {
   todayDone: document.querySelector("#todayDone"),
   streak: document.querySelector("#streak"),
@@ -136,6 +138,7 @@ function renderCard() {
   elements.pinyin.textContent = card.pinyin || lesson.theme;
   elements.prompt.textContent = card.prompt;
   elements.answerPanel.hidden = true;
+  elements.speakButton.textContent = "音声";
   elements.choices.innerHTML = "";
 
   card.choices.forEach((choice) => {
@@ -183,12 +186,55 @@ function selectChoice(button, choice, card) {
 
 function speakCurrentCard() {
   const card = state.view === "today" ? currentCard() : visibleCards()[state.index % visibleCards().length];
-  if (!("speechSynthesis" in window)) return;
+  if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+    showAudioMessage("このブラウザでは音声再生に対応していません。");
+    return;
+  }
+
   window.speechSynthesis.cancel();
+  window.speechSynthesis.resume();
+
   const utterance = new SpeechSynthesisUtterance(card.hanzi);
-  utterance.lang = "zh-CN";
-  utterance.rate = 0.82;
-  window.speechSynthesis.speak(utterance);
+  const voice = findMandarinVoice();
+  if (voice) utterance.voice = voice;
+  utterance.lang = voice?.lang || "zh-CN";
+  utterance.rate = 0.78;
+  utterance.pitch = 1;
+
+  utterance.onstart = () => {
+    elements.speakButton.textContent = "再生中";
+  };
+  utterance.onend = () => {
+    elements.speakButton.textContent = "音声";
+  };
+  utterance.onerror = () => {
+    elements.speakButton.textContent = "音声";
+    showAudioMessage("音声を再生できませんでした。端末の音量とブラウザの音声設定を確認してください。");
+  };
+
+  activeUtterance = utterance;
+  setTimeout(() => window.speechSynthesis.speak(activeUtterance), 80);
+}
+
+function findMandarinVoice() {
+  const voices = window.speechSynthesis.getVoices();
+  return (
+    voices.find((voice) => voice.lang === "zh-CN") ||
+    voices.find((voice) => voice.lang?.toLowerCase().startsWith("zh")) ||
+    voices.find((voice) => /chinese|mandarin|普通话|國語|中文/i.test(voice.name))
+  );
+}
+
+function warmUpVoices() {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
+
+function showAudioMessage(message) {
+  elements.answerText.textContent = "音声の確認";
+  elements.answerNote.textContent = message;
+  elements.answerPanel.hidden = false;
 }
 
 function nextCard() {
@@ -228,6 +274,7 @@ document.querySelectorAll(".nav-item").forEach((button) => {
 });
 
 resetDailyIfNeeded();
+warmUpVoices();
 renderCard();
 renderMissions();
 renderProgress();
