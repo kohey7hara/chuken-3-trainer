@@ -191,10 +191,18 @@ function speakCurrentCard() {
     return;
   }
 
-  const utterance = new SpeechSynthesisUtterance(card.hanzi);
+  if (window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+  }
+
+  speakText(card.hanzi, true);
+}
+
+function speakText(text, allowRetry) {
+  const utterance = new SpeechSynthesisUtterance(text);
   const voice = findMandarinVoice();
   if (voice) utterance.voice = voice;
-  utterance.lang = voice?.lang || "zh-Hans-CN";
+  utterance.lang = voice?.lang || "zh-CN";
   utterance.rate = 0.78;
   utterance.pitch = 1;
 
@@ -204,13 +212,39 @@ function speakCurrentCard() {
   utterance.onend = () => {
     elements.speakButton.textContent = "音声";
   };
-  utterance.onerror = () => {
+  utterance.onerror = (event) => {
+    if (event.error === "interrupted" || event.error === "canceled") {
+      elements.speakButton.textContent = "音声";
+      return;
+    }
+    if (allowRetry) {
+      speakWithoutVoice(text);
+      return;
+    }
     elements.speakButton.textContent = "音声";
-    showAudioMessage("音声を再生できませんでした。端末に中国語音声がないか、ブラウザが音声合成を許可していない可能性があります。");
+    showAudioMessage("音声を再生できませんでした。端末に中国語の読み上げ音声が入っていない可能性があります。");
   };
 
   activeUtterance = utterance;
-  window.speechSynthesis.cancel();
+  window.speechSynthesis.resume();
+  window.speechSynthesis.speak(activeUtterance);
+}
+
+function speakWithoutVoice(text) {
+  const fallback = new SpeechSynthesisUtterance(text);
+  fallback.lang = "zh-CN";
+  fallback.rate = 0.78;
+  fallback.onstart = () => {
+    elements.speakButton.textContent = "再生中";
+  };
+  fallback.onend = () => {
+    elements.speakButton.textContent = "音声";
+  };
+  fallback.onerror = () => {
+    elements.speakButton.textContent = "音声";
+    showAudioMessage("音声を再生できませんでした。端末の設定で中国語の読み上げ音声を追加する必要があるかもしれません。");
+  };
+  activeUtterance = fallback;
   window.speechSynthesis.resume();
   window.speechSynthesis.speak(activeUtterance);
 }
