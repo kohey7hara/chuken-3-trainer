@@ -1,6 +1,7 @@
 const importedVocabularyCards = typeof hskVocabularyCards === "undefined" ? [] : hskVocabularyCards;
 const cards = [...learningContent.cards, ...importedVocabularyCards];
 const lessons = learningContent.lessons;
+const tutorials = typeof grammarTutorials === "undefined" ? [] : grammarTutorials;
 const dailyGoal = 8;
 
 const missions = [
@@ -15,6 +16,7 @@ const state = {
   completedToday: JSON.parse(localStorage.getItem("completedToday") || "[]"),
   streak: Number(localStorage.getItem("streak") || 0),
   lastStudyDate: localStorage.getItem("lastStudyDate") || "",
+  tutorialIndex: Number(localStorage.getItem("tutorialIndex") || 0),
   view: "today",
 };
 
@@ -45,6 +47,22 @@ const elements = {
   nextButton: document.querySelector("#nextButton"),
   skipButton: document.querySelector("#skipButton"),
   resetButton: document.querySelector("#resetButton"),
+  practiceArea: document.querySelector(".practice-area"),
+  tutorialPanel: document.querySelector("#tutorialPanel"),
+  tutorialTitle: document.querySelector("#tutorialTitle"),
+  tutorialPosition: document.querySelector("#tutorialPosition"),
+  tutorialFocus: document.querySelector("#tutorialFocus"),
+  tutorialExamPoint: document.querySelector("#tutorialExamPoint"),
+  tutorialPattern: document.querySelector("#tutorialPattern"),
+  tutorialCaution: document.querySelector("#tutorialCaution"),
+  tutorialExamples: document.querySelector("#tutorialExamples"),
+  tutorialDrillQuestion: document.querySelector("#tutorialDrillQuestion"),
+  tutorialDrillChoices: document.querySelector("#tutorialDrillChoices"),
+  tutorialFeedback: document.querySelector("#tutorialFeedback"),
+  tutorialFeedbackTitle: document.querySelector("#tutorialFeedbackTitle"),
+  tutorialFeedbackNote: document.querySelector("#tutorialFeedbackNote"),
+  tutorialPrev: document.querySelector("#tutorialPrev"),
+  tutorialNext: document.querySelector("#tutorialNext"),
 };
 
 function todayKey() {
@@ -74,6 +92,7 @@ function saveState() {
   localStorage.setItem("completedToday", JSON.stringify(state.completedToday));
   localStorage.setItem("streak", String(state.streak));
   localStorage.setItem("lastStudyDate", state.lastStudyDate);
+  localStorage.setItem("tutorialIndex", String(state.tutorialIndex));
 }
 
 function resetDailyIfNeeded() {
@@ -115,7 +134,7 @@ function renderProgress() {
   const totalLessons = lessons.length;
   const totalCards = cards.length;
   const totalVocabulary = cards.filter((card) => card.type === "Vocabulary").length;
-  const currentVisibleTotal = visibleCards().length;
+  const currentVisibleTotal = Math.max(visibleCards().length, 1);
   const position = (state.index % currentVisibleTotal) + 1;
   const studiedCards = Number(localStorage.getItem("studiedCards") || 0);
 
@@ -127,6 +146,19 @@ function renderProgress() {
   elements.cardCount.textContent = totalCards;
   elements.currentPosition.textContent = `${position}/${currentVisibleTotal}`;
   elements.lessonTag.textContent = currentLesson().phase;
+}
+
+function renderView() {
+  const isTutorial = state.view === "tutorial";
+  elements.practiceArea.hidden = isTutorial;
+  elements.tutorialPanel.hidden = !isTutorial;
+
+  if (isTutorial) {
+    renderTutorial();
+  } else {
+    renderCard();
+  }
+  renderProgress();
 }
 
 function renderCard() {
@@ -151,6 +183,67 @@ function renderCard() {
     button.addEventListener("click", () => selectChoice(button, choice, card));
     elements.choices.appendChild(button);
   });
+}
+
+function renderTutorial() {
+  if (!tutorials.length) return;
+
+  const normalizedIndex = state.tutorialIndex % tutorials.length;
+  const tutorial = tutorials[normalizedIndex];
+  const drill = tutorial.drills[0];
+  elements.tutorialTitle.textContent = tutorial.title;
+  elements.tutorialPosition.textContent = `${normalizedIndex + 1}/${tutorials.length}`;
+  elements.tutorialFocus.textContent = tutorial.focus;
+  elements.tutorialExamPoint.textContent = tutorial.examPoint;
+  elements.tutorialPattern.textContent = tutorial.pattern;
+  elements.tutorialCaution.textContent = tutorial.caution;
+  elements.tutorialFeedback.hidden = true;
+  elements.tutorialExamples.innerHTML = "";
+  elements.tutorialDrillChoices.innerHTML = "";
+  elements.tutorialDrillQuestion.textContent = drill.question;
+
+  tutorial.examples.forEach((example) => {
+    const row = document.createElement("div");
+    row.className = "example-row";
+    row.innerHTML = `
+      <p class="example-zh">${example.zh}</p>
+      <p class="example-pinyin">${example.pinyin}</p>
+      <p class="example-ja">${example.ja}</p>
+    `;
+    elements.tutorialExamples.appendChild(row);
+  });
+
+  shuffledTutorialChoices(tutorial, drill).forEach((choice) => {
+    const button = document.createElement("button");
+    button.className = "choice-button";
+    button.type = "button";
+    button.textContent = choice;
+    button.addEventListener("click", () => selectTutorialChoice(button, choice, drill));
+    elements.tutorialDrillChoices.appendChild(button);
+  });
+}
+
+function shuffledTutorialChoices(tutorial, drill) {
+  const seed = `${todayKey()}-${tutorial.id}-${state.tutorialIndex}`;
+  return drill.choices
+    .map((choice, index) => ({ choice, rank: seededRank(`${seed}-${index}-${choice}`) }))
+    .sort((a, b) => a.rank - b.rank)
+    .map((item) => item.choice);
+}
+
+function selectTutorialChoice(button, choice, drill) {
+  [...elements.tutorialDrillChoices.children].forEach((child) => {
+    child.disabled = true;
+    if (child.textContent === drill.answer) child.classList.add("correct");
+  });
+
+  if (choice !== drill.answer) {
+    button.classList.add("wrong");
+  }
+
+  elements.tutorialFeedbackTitle.textContent = choice === drill.answer ? "正解です。" : `正解は「${drill.answer}」です。`;
+  elements.tutorialFeedbackNote.textContent = drill.note;
+  elements.tutorialFeedback.hidden = false;
 }
 
 function shuffledChoices(card) {
@@ -358,10 +451,28 @@ function showAudioMessage(message) {
 }
 
 function nextCard() {
+  if (state.view === "tutorial") {
+    nextTutorial();
+    return;
+  }
   state.index = (state.index + 1) % visibleCards().length;
   saveState();
-  renderCard();
+  renderView();
   renderProgress();
+}
+
+function previousTutorial() {
+  if (!tutorials.length) return;
+  state.tutorialIndex = (state.tutorialIndex - 1 + tutorials.length) % tutorials.length;
+  saveState();
+  renderTutorial();
+}
+
+function nextTutorial() {
+  if (!tutorials.length) return;
+  state.tutorialIndex = (state.tutorialIndex + 1) % tutorials.length;
+  saveState();
+  renderTutorial();
 }
 
 function resetProgress() {
@@ -371,7 +482,7 @@ function resetProgress() {
   state.lastStudyDate = "";
   localStorage.setItem("studiedCards", "0");
   saveState();
-  renderCard();
+  renderView();
   renderMissions();
   renderProgress();
 }
@@ -380,6 +491,8 @@ elements.speakButton.addEventListener("click", speakCurrentCard);
 elements.nextButton.addEventListener("click", nextCard);
 elements.skipButton.addEventListener("click", nextCard);
 elements.resetButton.addEventListener("click", resetProgress);
+elements.tutorialPrev.addEventListener("click", previousTutorial);
+elements.tutorialNext.addEventListener("click", nextTutorial);
 
 document.querySelectorAll(".nav-item").forEach((button) => {
   button.addEventListener("click", () => {
@@ -388,13 +501,11 @@ document.querySelectorAll(".nav-item").forEach((button) => {
     state.view = button.dataset.view;
     state.index = 0;
     saveState();
-    renderCard();
-    renderProgress();
+    renderView();
   });
 });
 
 resetDailyIfNeeded();
 warmUpVoices();
-renderCard();
+renderView();
 renderMissions();
-renderProgress();

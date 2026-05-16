@@ -91,9 +91,57 @@
         </div>
       </section>
 
+      <section class="tutorial-panel" id="tutorialPanel" aria-live="polite" hidden>
+        <div class="tutorial-header">
+          <div>
+            <p class="eyebrow">Tutorial</p>
+            <h2 id="tutorialTitle">文法チュートリアル</h2>
+          </div>
+          <span class="pill" id="tutorialPosition">1/8</span>
+        </div>
+
+        <div class="tutorial-card">
+          <span class="label">試験での見方</span>
+          <p id="tutorialFocus"></p>
+          <p class="tutorial-point" id="tutorialExamPoint"></p>
+        </div>
+
+        <div class="tutorial-grid">
+          <div class="tutorial-card">
+            <span class="label">型</span>
+            <strong id="tutorialPattern"></strong>
+          </div>
+          <div class="tutorial-card warning">
+            <span class="label">注意点</span>
+            <p id="tutorialCaution"></p>
+          </div>
+        </div>
+
+        <div class="tutorial-card">
+          <span class="label">例文</span>
+          <div class="example-list" id="tutorialExamples"></div>
+        </div>
+
+        <div class="tutorial-card">
+          <span class="label">確認問題</span>
+          <p class="drill-question" id="tutorialDrillQuestion"></p>
+          <div class="choices compact" id="tutorialDrillChoices"></div>
+          <div class="answer-panel" id="tutorialFeedback" hidden>
+            <p id="tutorialFeedbackTitle"></p>
+            <p class="note" id="tutorialFeedbackNote"></p>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="secondary-button" id="tutorialPrev" type="button">前へ</button>
+          <button class="primary-button" id="tutorialNext" type="button">次へ</button>
+        </div>
+      </section>
+
       <nav class="bottom-nav" aria-label="主要メニュー">
         <button class="nav-item active" type="button" data-view="today">今日</button>
         <button class="nav-item" type="button" data-view="words">単語</button>
+        <button class="nav-item" type="button" data-view="tutorial">解説</button>
         <button class="nav-item" type="button" data-view="grammar">文法</button>
         <button class="nav-item" type="button" data-view="listen">聞く</button>
       </nav>
@@ -102,6 +150,7 @@
 
     <script src="./data.js"></script>
     <script src="./vocab-2000.js?v=ja-20260516"></script>
-    <script src="./app.js?v=choices-20260516"></script>
+    <script src="./tutorials.js?v=tutorials-20260516"></script>
+    <script src="./app.js?v=tutorials-20260516"></script>
   </body>
 </html>
