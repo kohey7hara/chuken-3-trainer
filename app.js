@@ -188,16 +188,11 @@ function selectChoice(button, choice, card) {
 function speakCurrentCard() {
   const card = state.view === "today" ? currentCard() : visibleCards()[state.index % visibleCards().length];
   stopFallbackAudio();
-  if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
-    playFallbackAudio(card.hanzi);
-    return;
-  }
-
   if (window.speechSynthesis.speaking) {
     window.speechSynthesis.cancel();
   }
 
-  speakText(card.hanzi, true);
+  playFallbackAudio(card.hanzi);
 }
 
 function speakText(text, allowRetry) {
@@ -247,13 +242,20 @@ function playFallbackAudio(text) {
     elements.speakButton.textContent = "音声";
   };
   audio.onerror = () => {
-    elements.speakButton.textContent = "音声";
-    showAudioMessage("音声を再生できませんでした。通信状況を確認して、ページを再読み込みしてください。");
+    speakWithBrowserVoice(text);
   };
   audio.play().catch(() => {
-    elements.speakButton.textContent = "音声";
-    showAudioMessage("音声を再生できませんでした。ブラウザが音声再生をブロックしている可能性があります。");
+    speakWithBrowserVoice(text);
   });
+}
+
+function speakWithBrowserVoice(text) {
+  if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+    elements.speakButton.textContent = "音声";
+    showAudioMessage("音声を再生できませんでした。通信状況を確認して、ページを再読み込みしてください。");
+    return;
+  }
+  speakText(text, false);
 }
 
 function stopFallbackAudio() {
