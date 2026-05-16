@@ -39,6 +39,7 @@ const elements = {
   answerPanel: document.querySelector("#answerPanel"),
   answerText: document.querySelector("#answerText"),
   answerNote: document.querySelector("#answerNote"),
+  fallbackAudio: document.querySelector("#fallbackAudio"),
   speakButton: document.querySelector("#speakButton"),
   nextButton: document.querySelector("#nextButton"),
   skipButton: document.querySelector("#skipButton"),
@@ -186,8 +187,9 @@ function selectChoice(button, choice, card) {
 
 function speakCurrentCard() {
   const card = state.view === "today" ? currentCard() : visibleCards()[state.index % visibleCards().length];
+  stopFallbackAudio();
   if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
-    showAudioMessage("このブラウザでは音声再生に対応していません。");
+    playFallbackAudio(card.hanzi);
     return;
   }
 
@@ -218,7 +220,7 @@ function speakText(text, allowRetry) {
       return;
     }
     if (allowRetry) {
-      speakWithoutVoice(text);
+      playFallbackAudio(text);
       return;
     }
     elements.speakButton.textContent = "音声";
@@ -230,23 +232,35 @@ function speakText(text, allowRetry) {
   window.speechSynthesis.speak(activeUtterance);
 }
 
-function speakWithoutVoice(text) {
-  const fallback = new SpeechSynthesisUtterance(text);
-  fallback.lang = "zh-CN";
-  fallback.rate = 0.78;
-  fallback.onstart = () => {
+function playFallbackAudio(text) {
+  const audio = elements.fallbackAudio;
+  if (!audio) {
+    showAudioMessage("音声再生用の要素を初期化できませんでした。");
+    return;
+  }
+
+  audio.src = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(text)}&le=zh`;
+  audio.onplay = () => {
     elements.speakButton.textContent = "再生中";
   };
-  fallback.onend = () => {
+  audio.onended = () => {
     elements.speakButton.textContent = "音声";
   };
-  fallback.onerror = () => {
+  audio.onerror = () => {
     elements.speakButton.textContent = "音声";
-    showAudioMessage("音声を再生できませんでした。端末の設定で中国語の読み上げ音声を追加する必要があるかもしれません。");
+    showAudioMessage("音声を再生できませんでした。通信状況を確認して、ページを再読み込みしてください。");
   };
-  activeUtterance = fallback;
-  window.speechSynthesis.resume();
-  window.speechSynthesis.speak(activeUtterance);
+  audio.play().catch(() => {
+    elements.speakButton.textContent = "音声";
+    showAudioMessage("音声を再生できませんでした。ブラウザが音声再生をブロックしている可能性があります。");
+  });
+}
+
+function stopFallbackAudio() {
+  const audio = elements.fallbackAudio;
+  if (!audio) return;
+  audio.pause();
+  audio.currentTime = 0;
 }
 
 function findMandarinVoice() {
