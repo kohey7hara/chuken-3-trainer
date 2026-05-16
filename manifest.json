@@ -1,0 +1,9 @@
+{
+  "name": "中検3級トレーナー",
+  "short_name": "中検3級",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f6f7f4",
+  "theme_color": "#0f766e",
+  "lang": "ja"
+}
