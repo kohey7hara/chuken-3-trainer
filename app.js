@@ -19,6 +19,7 @@ const state = {
 };
 
 let activeUtterance = null;
+let audioResetTimer = null;
 
 const elements = {
   todayDone: document.querySelector("#todayDone"),
@@ -234,18 +235,40 @@ function playFallbackAudio(text) {
     return;
   }
 
-  audio.src = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(text)}&le=zh`;
+  const audioText = normalizeSpeechText(text);
+  const sources = [
+    `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=zh-CN&q=${encodeURIComponent(audioText)}`,
+    `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(audioText)}&le=zh`,
+  ];
+  playAudioSource(sources, 0);
+}
+
+function playAudioSource(sources, index) {
+  const audio = elements.fallbackAudio;
+  if (!audio || index >= sources.length) {
+    speakWithBrowserVoice(currentSpeechText());
+    return;
+  }
+
+  clearAudioResetTimer();
+  audio.src = sources[index];
   audio.onplay = () => {
     elements.speakButton.textContent = "再生中";
+    audioResetTimer = setTimeout(() => {
+      elements.speakButton.textContent = "音声";
+    }, 12000);
   };
   audio.onended = () => {
+    clearAudioResetTimer();
     elements.speakButton.textContent = "音声";
   };
   audio.onerror = () => {
-    speakWithBrowserVoice(text);
+    clearAudioResetTimer();
+    playAudioSource(sources, index + 1);
   };
   audio.play().catch(() => {
-    speakWithBrowserVoice(text);
+    clearAudioResetTimer();
+    playAudioSource(sources, index + 1);
   });
 }
 
@@ -261,8 +284,27 @@ function speakWithBrowserVoice(text) {
 function stopFallbackAudio() {
   const audio = elements.fallbackAudio;
   if (!audio) return;
+  clearAudioResetTimer();
   audio.pause();
   audio.currentTime = 0;
+}
+
+function normalizeSpeechText(text) {
+  return String(text)
+    .replace(/[。！？!?，,、；;：:「」『』（）()]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function currentSpeechText() {
+  const card = state.view === "today" ? currentCard() : visibleCards()[state.index % visibleCards().length];
+  return normalizeSpeechText(card.hanzi);
+}
+
+function clearAudioResetTimer() {
+  if (!audioResetTimer) return;
+  clearTimeout(audioResetTimer);
+  audioResetTimer = null;
 }
 
 function findMandarinVoice() {
