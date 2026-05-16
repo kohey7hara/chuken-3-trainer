@@ -4,6 +4,11 @@
 
 ローカルサーバーを立てずに、GitHub Pages、Netlify、Cloudflare Pages などの静的ホスティングで公開できます。
 
+## 公開URL
+
+- Site: https://kohey7hara.github.io/chuken-3-trainer/
+- Repository: https://github.com/kohey7hara/chuken-3-trainer
+
 ## 公開方法: GitHub Pages
 
 1. GitHubで新しいリポジトリを作成する
