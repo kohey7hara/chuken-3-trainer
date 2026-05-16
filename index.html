@@ -21,7 +21,7 @@
       <section class="progress-panel" aria-label="学習進捗">
         <div>
           <span class="label">今日の達成</span>
-          <strong id="todayDone">0/4</strong>
+          <strong id="todayDone">0/8</strong>
         </div>
         <div>
           <span class="label">連続学習</span>
@@ -42,6 +42,21 @@
           <span class="pill" id="lessonTag">Phase 1</span>
         </div>
         <div class="mission-list" id="missionList"></div>
+      </section>
+
+      <section class="content-panel" aria-label="教材量">
+        <div>
+          <span class="label">教材パック</span>
+          <strong><span id="lessonCount">20</span>レッスン</strong>
+        </div>
+        <div>
+          <span class="label">総カード</span>
+          <strong><span id="cardCount">100</span>問</strong>
+        </div>
+        <div>
+          <span class="label">現在</span>
+          <strong id="currentPosition">1/100</strong>
+        </div>
       </section>
 
       <section class="practice-area" aria-live="polite">
@@ -80,6 +95,7 @@
       </nav>
     </main>
 
+    <script src="./data.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

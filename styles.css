@@ -98,7 +98,8 @@ h2 {
   margin-bottom: 14px;
 }
 
-.progress-panel > div {
+.progress-panel > div,
+.content-panel > div {
   min-height: 72px;
   padding: 12px 10px;
   border: 1px solid var(--line);
@@ -116,6 +117,19 @@ h2 {
 
 .progress-panel strong {
   font-size: 1.2rem;
+}
+
+.content-panel {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.content-panel strong {
+  display: block;
+  font-size: 1rem;
+  line-height: 1.25;
 }
 
 .mission-card,
