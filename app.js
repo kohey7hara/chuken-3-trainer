@@ -236,10 +236,12 @@ function playFallbackAudio(text) {
   }
 
   const audioText = normalizeSpeechText(text);
-  const sources = [
+  const card = state.view === "today" ? currentCard() : visibleCards()[state.index % visibleCards().length];
+  const remoteSources = [
     `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=zh-CN&q=${encodeURIComponent(audioText)}`,
     `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(audioText)}&le=zh`,
   ];
+  const sources = card.lesson <= 20 ? [`./assets/audio/${audioKey(audioText)}.mp3`, ...remoteSources] : remoteSources;
   playAudioSource(sources, 0);
 }
 
@@ -299,6 +301,14 @@ function normalizeSpeechText(text) {
 function currentSpeechText() {
   const card = state.view === "today" ? currentCard() : visibleCards()[state.index % visibleCards().length];
   return normalizeSpeechText(card.hanzi);
+}
+
+function audioKey(text) {
+  let hash = 5381;
+  for (const char of text) {
+    hash = ((hash << 5) + hash) ^ char.codePointAt(0);
+  }
+  return (hash >>> 0).toString(36);
 }
 
 function clearAudioResetTimer() {
